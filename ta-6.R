@@ -1,4 +1,8 @@
-
+# Team Member's Name & Computing ID's: Ferris, Kyle, kcf5bw
+#                                      Hays, Matthew, mch9qs
+#                                      Tong, Wenting, wt4yg
+#                                      Agrawal, Prateek, pa7sb
+#
 #******************************************************************************************
 #                             TEAM ASSIGNMENT- 6
 #*****************************************************************************************
