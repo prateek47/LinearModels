@@ -144,7 +144,7 @@ rep.masuyama <- function(df, min.x, max.x, min.y, max.y, radius = 37){
       area <- area + overlap.area(xt,yt,rl)
       value1 <- 0
       value1 <- ((df$x - xt)^2 + (df$y - yt)^2 - rl^2 < 0)
-      tree.sample.ba <- append(tree.sample.ba , df$ba[value1])
+      tree.sample.ba <- c(tree.sample.ba , df$ba[value1])
     }
     prob.tree.sample <- area/area.of.square
     return(sum(tree.sample.ba)/prob.tree.sample)
