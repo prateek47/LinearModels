@@ -1,43 +1,54 @@
+# This is the web sraping code for extraction of dataset
+
+# the libraries used
 library(rvest)
 library(plyr)
 library(stringr)
 library(RJSONIO)
 
-
+# creating a corpus
 if (!file.exists("MovieData")) {
   dir.create("MovieData")
 }
 setwd("MovieData")
 
+# creating a vector for the year from which movies are required
 year <- c(2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014)
+
+# Scraping the top 100 highest crossing movies per year from boxofficemojo.com, 
+# reference: http://www.boxofficemojo.com/yearly/
 
 for( i in 1:length(year)){
   urlmov <- paste0("http://www.boxofficemojo.com/yearly/chart/?yr=", year[i], "&p=.html")
-  movie_name <- read_html(urlmov)%>%
+  movie_name <- read_html(urlmov)%>%               # The name of the movies
     html_nodes("td td b font a")%>%
     html_text()
   
-  gross_earning <- read_html(urlmov)%>%
+  gross_earning <- read_html(urlmov)%>%            # The gross earning by boxofficemojo
     html_nodes("td td tr+ tr td+ td font b")%>%
     html_text()
   
-  theater <- read_html(urlmov)%>%
+  theater <- read_html(urlmov)%>%                  # The number of total number of theaters/screens, movie was shown
     html_nodes("tr+ tr td:nth-child(5) font")%>%
     html_text()
   
   moviedata <- data.frame(movie_names= movie_name, gross_earning= gross_earning, theatre_count= theater[3:102], yearofrelease = year[i])
-                          
+  
   filename <- paste0(year[i], ".csv")
   sink(file = filename) %>% # open file to write
     cat(write.csv(moviedata))
   sink()
 }
 
-# combining all files together in one dataframe
+# combining all datasets together together in one dataframe
 files_data <- list.files(getwd(), pattern = ".csv")
 moviesDF <- do.call(rbind, lapply(files_data, read.csv))
 
-#performing the following operations on the movie name to make it readable for url
+# To extract other variable we have use restful API of imdb which can be found on the link below
+# http://www.omdbapi.com/ 
+# to extract data as per the movie name following operations are performed on the movie name column
+# to make it more readable as per the url requirement of the "omdbapi"
+#
 moviesDF$new_name <- str_replace_all(moviesDF$movie_names, "[\\?!]", "")
 moviesDF$new_name <- str_replace(moviesDF$new_name, "\\((.*?)\\)", "")
 moviesDF$new_name <- str_trim(moviesDF$new_name, side = "both")
@@ -47,7 +58,9 @@ moviesDF$new_name <- str_replace_all(moviesDF$new_name,"[^a-zA-Z0-9\\-'.,]+" , "
 moviesDF$new_name <- str_replace(moviesDF$new_name,"^The\\+" , "")
 moviesDF$new_name <- str_replace(moviesDF$new_name, "^Tyler\\+Perry's\\+", "")
 
-# addressing some discrepancies in movie names
+# while due to some differences in the movie names, following specific string transformation
+# functions are performed on the movie names to make them more readable
+#
 moviesDF$new_name[433] <- str_to_lower(moviesDF$new_name[433])
 str_sub(moviesDF$new_name[991], start = 1, end = -1) <- "9+"
 moviesDF$new_name[c(229,1076, 1023)] <- str_replace(moviesDF$new_name[c(229,1076, 1023)], "\\-", "")
@@ -86,21 +99,24 @@ str_sub(moviesDF$new_name[946], start = 1, end = -11) <- ""
 str_sub(moviesDF$new_name[748], start = 2, end = 2) <- "%3A"
 str_sub(moviesDF$new_name[961], start = -4, end = -1) <- ""
 str_sub(moviesDF$new_name[1297], start = 8, end = 8) <- "!+"
-# removing some invalid movie names
+
+# removing some of the invalid movie's names
 moviesDF <- moviesDF[-c(61, 993, 551, 1133, 1278, 1282, 1294), ] # 1278(TV Episode), 1282(TV episode), 1294(TV episode)
 
+# Scraping the data using 'omdbapi'
 for(i in 1:nrow(moviesDF)){
   movie <- fromJSON(paste0("http://www.omdbapi.com/?t=", moviesDF$new_name[i], "&y=", moviesDF$yearofrelease[i], "&tomatoes=true&r=json"))
-  moviesDF$IMDB_Rating[i] <- movie[[16]]
-  moviesDF$Genre[i] <- movie[[6]]
-  moviesDF$Tomato_Meter[i] <- movie[[20]]
-  moviesDF$Tomato_Rating[i] <- movie[[22]]
-  moviesDF$Tomato_UserMeter[i] <- movie[[27]]
-  moviesDF$Tomato_UserRating[i] <- movie[[28]]
-  moviesDF$Rated[i] <- movie[[3]]
-  moviesDF$BoxOffice[i] <- movie[[31]]
+  moviesDF$IMDB_Rating[i] <- movie[[16]]        # the imdb rating of the each movie
+  moviesDF$Genre[i] <- movie[[6]]               # the Genre to which the movie belongs
+  moviesDF$Tomato_Meter[i] <- movie[[20]]       # the Rotten Tomatoes movie Meter
+  moviesDF$Tomato_Rating[i] <- movie[[22]]      # The Rotten Tomatoe's movie rating
+  moviesDF$Tomato_UserMeter[i] <- movie[[27]]   # The Rotten Tomatoe's User Meter
+  moviesDF$Tomato_UserRating[i] <- movie[[28]]  # The Rotten Tomatoe's User Rating
+  moviesDF$Rated[i] <- movie[[3]]               # Which rating the movie belonged to
+  moviesDF$BoxOffice[i] <- movie[[31]]          # The box office gross extimated by rotten tomatoes
 }
-
+#
+# Dropping the unnecessary columns
 drops <- c("new_name", "X")
 moviesDF <- moviesDF[ ,!(names(moviesDF) %in% drops)]
 
@@ -112,5 +128,3 @@ setwd("C:/UVa/Stat_6021_Linear Models/workspace")
 
 # saving the dataset in a csv format
 write.csv(moviesDF, file = "MovieData.csv")
-
-# will add comments before the next meeting!!! 
