@@ -33,7 +33,7 @@ for( i in 1:length(year)){
     html_text()
   
   moviedata <- data.frame(movie_names= movie_name, gross_earning= gross_earning, theatre_count= theater[3:102], yearofrelease = year[i])
-  
+                          
   filename <- paste0(year[i], ".csv")
   sink(file = filename) %>% # open file to write
     cat(write.csv(moviedata))
@@ -117,14 +117,75 @@ for(i in 1:nrow(moviesDF)){
 }
 #
 # Dropping the unnecessary columns
-drops <- c("new_name", "X")
+drops <- c("new_name", "X", "BoxOffice")
 moviesDF <- moviesDF[ ,!(names(moviesDF) %in% drops)]
-
-# save the R session as image so that we can reuse it again.
-save.image("../LinearModelsProj1.RData")
 
 # get out of the Moviedata folder and save the dataset
 setwd("C:/UVa/Stat_6021_Linear Models/workspace")
 
+#----------------------
+# scraping the other movie data required
+# scraping ticket prices
+tckt_year <- read_html('http://natoonline.org/data/ticket-price/')%>%
+  html_nodes('.column-1')%>%
+  html_text()
+
+tckt_pr <- read_html('http://natoonline.org/data/ticket-price/')%>%
+  html_nodes('.column-2')%>%
+  html_text()
+
+price.data <- data.frame(year= tckt_year, price= tckt_pr)
+price.data <- price.data[2:15, ]
+
+#------------------------
+# scraping total Box Office earning for the entire year
+box_year <- read_html('http://natoonline.org/data/boxoffice/')%>%
+  html_nodes('.column-1')%>%
+  html_text()
+
+tot_earn <- read_html('http://natoonline.org/data/boxoffice/')%>%
+  html_nodes('.column-2')%>%
+  html_text()
+
+boxoffice_earning <- data.frame(year= box_year, price= tot_earn)
+boxoffice_earning <- boxoffice_earning[2:15, ]
+
+#------------------------
+# Scraping the total number of screen available in U.S.
+year <- read_html('http://natoonline.org/data/us-movie-screens/')%>%
+  html_nodes('.column-1')%>%
+  html_text()
+
+tot_indoor <- read_html('http://natoonline.org/data/us-movie-screens/')%>%
+  html_nodes('.column-2')%>%
+  html_text()
+
+tot_drivein <- read_html('http://natoonline.org/data/us-movie-screens/')%>%
+  html_nodes('.column-3')%>%
+  html_text()
+
+tot_screen <- read_html('http://natoonline.org/data/us-movie-screens/')%>%
+  html_nodes('.column-4')%>%
+  html_text()
+
+tot.screen.data<- data.frame(year= year, indoor_screen=tot_indoor, drivein_screen= tot_drivein, 
+                             total_screen= tot_screen)
+tot.screen.data <- tot.screen.data[2:15, ]
+
+#-------------------------------------
+
+
+
+
+
+
+# save the R session as image so that we can reuse it again.
+save.image("../LinearModelsProj1.RData")
+
 # saving the dataset in a csv format
 write.csv(moviesDF, file = "MovieData.csv")
+write.csv(price.data, file = "TcktPrice.csv")
+write.csv(boxoffice_earning, file = "TotalBoxOffice.csv")
+write.csv(tot.screen.data, file = "TotalScreenCount.csv")
+
+#
