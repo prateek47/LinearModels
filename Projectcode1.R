@@ -174,7 +174,11 @@ tot.screen.data <- tot.screen.data[2:15, ]
 
 #-------------------------------------
 
+#Do some data cleaning
 
+moviesDF$gross_earning <- as.integer(gsub("[$,]","",moviesDF$gross_earning))
+moviesDF$theatre_count <- as.integer(moviesDF$theatre_count)
+moviesDF[moviesDF=="N/A"] <- NA
 
 
 
