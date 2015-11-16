@@ -180,7 +180,7 @@ tot.screen.data <- tot.screen.data[2:15, ]
 
 
 # save the R session as image so that we can reuse it again.
-save.image("../LinearModelsProj1.RData")
+save.image("LinearModelsProj1.RData")
 
 # saving the dataset in a csv format
 write.csv(moviesDF, file = "MovieData.csv")
