@@ -174,11 +174,7 @@ tot.screen.data <- tot.screen.data[2:15, ]
 
 #-------------------------------------
 
-#Do some data cleaning
 
-moviesDF$gross_earning <- as.integer(gsub("[$,]","",moviesDF$gross_earning))
-moviesDF$theatre_count <- as.integer(gsub(",","",moviesDF$theatre_count))
-moviesDF[moviesDF=="N/A"] <- NA
 
 
 
@@ -193,3 +189,138 @@ write.csv(boxoffice_earning, file = "TotalBoxOffice.csv")
 write.csv(tot.screen.data, file = "TotalScreenCount.csv")
 
 #
+load('LinearModelsProj1.RData')
+#Split the genre by comma
+genre <-strsplit( moviesDF$Genre,',')
+maxLen <- max(sapply(genre, length))
+genre1 <- rep(NA,dim(moviesDF)[1])
+genre2 <- rep(NA,dim(moviesDF)[1])
+genre3 <- rep(NA,dim(moviesDF)[1])
+for(i in 1:dim(moviesDF)[1]){
+  if(!is.na(genre[[i]][1])){
+    genre1[i] <- genre[[i]][1]
+  }
+  if(!is.na(genre[[i]][2])){
+    genre2[i] <- genre[[i]][2]
+  }
+  if(!is.na(genre[[i]][3])){
+    genre3[i] <- genre[[i]][3]
+  }
+}
+#get rid of white space
+library(stringr)
+genre1 <- str_trim(genre1)
+genre2 <- str_trim(genre2)
+genre3 <- str_trim(genre3)
+
+#Find the categories of genre
+table(genre1)
+table(genre2)
+table(genre3)
+
+#create dummy variables
+Action <- rep(0,dim(moviesDF)[1])
+Adult <- rep(0,dim(moviesDF)[1])
+Adventure <- rep(0,dim(moviesDF)[1])
+Animation <- rep(0,dim(moviesDF)[1])
+Biography <- rep(0,dim(moviesDF)[1])
+Comedy <- rep(0,dim(moviesDF)[1])
+Crime <- rep(0,dim(moviesDF)[1])
+Documentary <- rep(0,dim(moviesDF)[1])
+Drama <- rep(0,dim(moviesDF)[1])
+Family <- rep(0,dim(moviesDF)[1])
+Fantasy <- rep(0,dim(moviesDF)[1])
+History <- rep(0,dim(moviesDF)[1])
+Horror <- rep(0,dim(moviesDF)[1])
+Music <- rep(0,dim(moviesDF)[1])
+Musical <- rep(0,dim(moviesDF)[1])
+Mystery <- rep(0,dim(moviesDF)[1])
+Romance <- rep(0,dim(moviesDF)[1])
+SciFi <- rep(0,dim(moviesDF)[1])
+Short <- rep(0,dim(moviesDF)[1])
+Sport <- rep(0,dim(moviesDF)[1])
+Thriller <- rep(0,dim(moviesDF)[1])
+War <- rep(0,dim(moviesDF)[1])
+Western <- rep(0,dim(moviesDF)[1])
+
+for(i in 1:dim(moviesDF)[1]){
+  if(any(genre1[i]=='Action',genre2[i]=='Action',genre3[i]=='Action',na.rm =T)){
+    Action[i] <- 1
+  }
+  if(any(genre1[i]=='Adult',genre2[i]=='Adult',genre3[i]=='Adult',na.rm =T)){
+    Adult[i] <- 1
+  }
+  if(any(genre1[i]=='Adventure',genre2[i]=='Adventure',genre3[i]=='Adventure',na.rm =T)){
+    Adventure[i] <- 1
+  }
+  if(any(genre1[i]=='Animation',genre2[i]=='Animation',genre3[i]=='Animation',na.rm =T)){
+    Animation[i] <- 1
+  }
+  if(any(genre1[i]=='Biography',genre2[i]=='Biography',genre3[i]=='Biography',na.rm =T)){
+    Biography[i] <- 1
+  }
+  if(any(genre1[i]=='Comedy',genre2[i]=='Comedy',genre3[i]=='Comedy',na.rm =T)){
+    Comedy[i] <- 1
+  }
+  if(any(genre1[i]=='Crime',genre2[i]=='Crime',genre3[i]=='Crime',na.rm =T)){
+    Crime[i] <- 1
+  }
+  if(any(genre1[i]=='Documentary',genre2[i]=='Documentary',genre3[i]=='Documentary',na.rm =T)){
+    Documentary[i] <- 1
+  }
+  if(any(genre1[i]=='Drama',genre2[i]=='Drama',genre3[i]=='Drama',na.rm =T)){
+    Drama[i] <- 1
+  }
+  if(any(genre1[i]=='Family',genre2[i]=='Family',genre3[i]=='Family',na.rm =T)){
+    Family[i] <- 1
+  }
+  if(any(genre1[i]=='Fantasy',genre2[i]=='Fantasy',genre3[i]=='Fantasy',na.rm =T)){
+    Fantasy[i] <- 1
+  }
+  if(any(genre1[i]=='History',genre2[i]=='History',genre3[i]=='History',na.rm =T)){
+    History[i] <- 1
+  }
+  if(any(genre1[i]=='Horror',genre2[i]=='Horror',genre3[i]=='Horror',na.rm =T)){
+    Horror[i] <- 1
+  }
+  if(any(genre1[i]=='Music',genre2[i]=='Music',genre3[i]=='Music',na.rm =T)){
+    Music[i] <- 1
+  }
+  if(any(genre1[i]=='Musical',genre2[i]=='Musical',genre3[i]=='Musical',na.rm =T)){
+    Musical[i] <- 1
+  }
+  if(any(genre1[i]=='Mystery',genre2[i]=='Mystery',genre3[i]=='Mystery',na.rm =T)){
+    Mystery[i] <- 1
+  }
+  if(any(genre1[i]=='Romance',genre2[i]=='Romance',genre3[i]=='Romance',na.rm =T)){
+    Romance[i] <- 1
+  }
+  if(any(genre1[i]=='Sci-Fi',genre2[i]=='Sci-Fi',genre3[i]=='Sci-Fi',na.rm =T)){
+    SciFi[i] <- 1
+  }
+  if(any(genre1[i]=='Short',genre2[i]=='Short',genre3[i]=='Short',na.rm =T)){
+    Short[i] <- 1
+  }
+  if(any(genre1[i]=='Sport',genre2[i]=='Sport',genre3[i]=='Sport',na.rm =T)){
+    Sport[i] <- 1
+  }
+  if(any(genre1[i]=='Thriller',genre2[i]=='Thriller',genre3[i]=='Thriller',na.rm =T)){
+    Thriller[i] <- 1
+  }
+  if(any(genre1[i]=='War',genre2[i]=='War',genre3[i]=='War',na.rm =T)){
+    War[i] <- 1
+  }
+  if(any(genre1[i]=='Western',genre2[i]=='Western',genre3[i]=='Western',na.rm =T)){
+    Western[i] <- 1
+  }
+}
+
+film <- cbind(moviesDF,genre1,genre2,genre3, Action,Adult,Adventure,Animation,Biography,Comedy,Crime, Documentary,Drama,Family,Fantasy,History,Horror,Music,Musical, Mystery,Romance,SciFi, Short,Sport,Thriller,War,Western )
+
+
+
+
+
+
+
+
