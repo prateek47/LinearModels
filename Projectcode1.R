@@ -352,10 +352,20 @@ for(i in 1:dim(moviesDF)[1]){
   }
 }
 
-film <- cbind(moviesDF,genre1,genre2,genre3, Action,Adult,Adventure,Animation,Biography,Comedy,Crime, Documentary,Drama,Family,Fantasy,History,Horror,Music,Musical, Mystery,Romance,SciFi, Short,Sport,Thriller,War,Western )
+film <- cbind(moviesDF,genre1,genre2,genre3,as.factor(Action),as.factor(Adult),as.factor(Adventure),as.factor(Animation),as.factor(Biography),as.factor(Comedy),
+              as.factor(Crime), as.factor(Documentary),as.factor(Drama),as.factor(Family),as.factor(Fantasy),as.factor(History),as.factor(Horror),
+              as.factor(Music),as.factor(Musical), as.factor(Mystery),as.factor(Romance),as.factor(SciFi), as.factor(Short),as.factor(Sport),as.factor(Thriller),
+              as.factor(War),as.factor(Western) )
 
+my_names<-c("Name","gross_earning","theatre_count","year","IMDB_Rating","Genre","Tomato_Meter","Tomato_Rating","Tomato_User_Meter",
+            "Tomato_User_Rating","MPAA_Rating","genre1","genre2","genre3","Action","Adult","Adventure","Animation","Biography","Comedy","Crime",
+            "Documentary","Drama","Family","Fantasy","History","Horror","Music","Musical","Mystery","Romance","SciFi","Short","Sport","Thriller","War","Western")
 
+names(film) <- my_names
+names(film)
 
+lm1 <- lm(gross_earning~IMDB_Rating+Rated+Tomato_Meter, data=film)
+summary(lm1)
 
 
 
