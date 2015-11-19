@@ -355,9 +355,16 @@ for(i in 1:dim(moviesDF)[1]){
 film <- cbind(moviesDF,genre1,genre2,genre3, Action,Adult,Adventure,Animation,Biography,Comedy,Crime, Documentary,Drama,Family,Fantasy,History,Horror,Music,Musical, Mystery,Romance,SciFi, Short,Sport,Thriller,War,Western )
 
 
+# cleaning the film dataset
+drop1 <- c("genre1", "genre2", "genre3", "Tomato_UserMeter", "Tomato_UserRating", "Genre", "yearofrelease")
+film1<- film[ , !( names(film) %in% drop1)]
 
+# finding the NA rows in the rotten tomato column
+film2 <- film1[which(is.na(film1$Tomato_Meter), arr.ind = TRUE), ]
 
+# converting multiple column in factors
+nam <- names(film1[,7:30])
+film3 <- as.data.frame((apply(film1[, (names(film1) %in% nam)], 2,as.factor)))
+film1 <- cbind(film1[, 1:6], film3)
 
-
-
-
+model1 <- lm(gross_earning~., data = film1)
