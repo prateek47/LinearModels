@@ -346,8 +346,25 @@ my_names<-c("Name","gross_earning","theatre_count","year","IMDB_Rating","Genre",
 names(film) <- my_names
 names(film)
 
+<<<<<<< HEAD
 lm1 <- lm(gross_earning~ theatre_count+IMDB_Rating+Tomato_Meter+Tomato_Rating+Tomato_User_Meter
           +Tomato_User_Rating+MPAA_Rating+Action+Adventure+Animation+Biography+Comedy
           +Crime+Documentary+Drama+Family+Fantasy+History+Horror+Music+Musical+
             Mystery+ Romance+ SciFi+ Short+ Sport+ Thriller+War+Western, data= film)
 summary(lm1)
+=======
+price.data$price <- as.numeric(gsub("[$]","",price.data$price))
+film <- merge(price.data,film,by='year')
+film$gross_earning_after <- film$gross_earning/film$price
+
+lm1 <- lm(gross_earning_after~theatre_count+IMDB_Rating+Tomato_Meter+Tomato_Rating+Tomato_User_Meter+Tomato_User_Rating+MPAA_Rating+Action+Adventure+Animation+Biography+Comedy+Crime+Documentary+Drama+Family+Fantasy+History+Horror+Music+Musical+Mystery+Romance+SciFi+Short+Sport+Thriller+War+Western,data=film)
+
+
+summary(lm1)
+
+
+
+
+
+
+>>>>>>> origin/master
