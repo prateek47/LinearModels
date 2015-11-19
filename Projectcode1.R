@@ -174,7 +174,44 @@ tot.screen.data <- tot.screen.data[2:15, ]
 
 #-------------------------------------
 
+<<<<<<< HEAD
 
+=======
+#Do some data cleaning and tranformation of data types
+
+moviesDF$gross_earning <- as.integer(gsub("[$,]","",moviesDF$gross_earning))
+moviesDF$theatre_count <- as.integer(gsub(",","",moviesDF$theatre_count))
+moviesDF[moviesDF=="N/A"] <- NA
+moviesDF <- transform(moviesDF, yearofrelease= as.numeric(yearofrelease), 
+                      IMDB_Rating= as.numeric(IMDB_Rating), Tomato_UserRating= as.numeric(Tomato_UserRating),
+                      Tomato_UserMeter= as.numeric(Tomato_UserMeter),Tomato_Rating= as.numeric(Tomato_Rating),
+                      Tomato_Meter= as.numeric(Tomato_Meter))
+
+# conversion of genre in factors
+
+unique(moviesDF$Genre)
+# there are 250 uniue combinations
+# (or)
+# there are 21 different genre's 
+# 1. Comedy, 2. Adventure, 3. Family, 4. Fantasy 5. Drama, 6. Action, 7. Thriller, 8. Romance,
+# 9. Sci-Fi, 10. Mystery, 11. Horror, 12. Animation, 13. Biography, 14. Crime, 15. Sport, 
+# 16. History, 17. War, 18. Music/Musical, 19. Documentary, 20. Short, 21. Adult, 22. Western
+
+# we can also subset movies based on movie rating and present that in the analysis
+
+unique(moviesDF$Rated)
+# we get 9 different rating types
+# "PG"      "PG-13"   "R"       "G"       NA        "X"       "TV-MA"   "UNRATED" "TV-PG"
+
+# PG = "Parental guidance suggested"
+# PG-13 = "Parents strongly cautioned"
+# R/TV-PG = "Restricted"
+# X/TV-MA/NC-17 ="No one 17 and under admitted"
+# G = "General Auidence"
+# UNRATED = "Scenes have been added in the film that were not present in the rated version"
+# NA = " no rating available" -- for such film we have to check online and add or we add check the
+# the genre and add the same rating of other movies in the same genre.
+>>>>>>> origin/master
 
 
 
