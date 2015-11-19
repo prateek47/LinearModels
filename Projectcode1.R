@@ -135,7 +135,7 @@ tckt_pr <- read_html('http://natoonline.org/data/ticket-price/')%>%
   html_text()
 
 price.data <- data.frame(year= tckt_year, price= tckt_pr)
-price.data <- price.data[2:15, ]
+price.data <- price.data[2:16, ]
 
 #------------------------
 # scraping total Box Office earning for the entire year
@@ -148,7 +148,7 @@ tot_earn <- read_html('http://natoonline.org/data/boxoffice/')%>%
   html_text()
 
 boxoffice_earning <- data.frame(year= box_year, price= tot_earn)
-boxoffice_earning <- boxoffice_earning[2:15, ]
+boxoffice_earning <- boxoffice_earning[2:16, ]
 
 #------------------------
 # Scraping the total number of screen available in U.S.
@@ -170,7 +170,7 @@ tot_screen <- read_html('http://natoonline.org/data/us-movie-screens/')%>%
 
 tot.screen.data<- data.frame(year= year, indoor_screen=tot_indoor, drivein_screen= tot_drivein, 
                              total_screen= tot_screen)
-tot.screen.data <- tot.screen.data[2:15, ]
+tot.screen.data <- tot.screen.data[2:16, ]
 
 #-------------------------------------
 
@@ -364,8 +364,15 @@ my_names<-c("Name","gross_earning","theatre_count","year","IMDB_Rating","Genre",
 names(film) <- my_names
 names(film)
 
-lm1 <- lm(gross_earning~IMDB_Rating+Rated+Tomato_Meter, data=film)
+price.data$price <- as.numeric(gsub("[$]","",price.data$price))
+film <- merge(price.data,film,by='year')
+film$gross_earning_after <- film$gross_earning/film$price
+
+lm1 <- lm(gross_earning_after~theatre_count+IMDB_Rating+Tomato_Meter+Tomato_Rating+Tomato_User_Meter+Tomato_User_Rating+MPAA_Rating+Action+Adventure+Animation+Biography+Comedy+Crime+Documentary+Drama+Family+Fantasy+History+Horror+Music+Musical+Mystery+Romance+SciFi+Short+Sport+Thriller+War+Western,data=film)
+
+
 summary(lm1)
+
 
 
 
