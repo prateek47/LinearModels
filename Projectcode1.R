@@ -135,7 +135,7 @@ tckt_pr <- read_html('http://natoonline.org/data/ticket-price/')%>%
   html_text()
 
 price.data <- data.frame(year= tckt_year, price= tckt_pr)
-price.data <- price.data[2:15, ]
+price.data <- price.data[2:16, ]
 
 #------------------------
 # scraping total Box Office earning for the entire year
@@ -148,7 +148,7 @@ tot_earn <- read_html('http://natoonline.org/data/boxoffice/')%>%
   html_text()
 
 boxoffice_earning <- data.frame(year= box_year, price= tot_earn)
-boxoffice_earning <- boxoffice_earning[2:15, ]
+boxoffice_earning <- boxoffice_earning[2:16, ]
 
 #------------------------
 # Scraping the total number of screen available in U.S.
@@ -170,13 +170,10 @@ tot_screen <- read_html('http://natoonline.org/data/us-movie-screens/')%>%
 
 tot.screen.data<- data.frame(year= year, indoor_screen=tot_indoor, drivein_screen= tot_drivein, 
                              total_screen= tot_screen)
-tot.screen.data <- tot.screen.data[2:15, ]
+tot.screen.data <- tot.screen.data[2:16, ]
 
 #-------------------------------------
 
-<<<<<<< HEAD
-
-=======
 #Do some data cleaning and tranformation of data types
 
 moviesDF$gross_earning <- as.integer(gsub("[$,]","",moviesDF$gross_earning))
@@ -187,17 +184,6 @@ moviesDF <- transform(moviesDF, yearofrelease= as.numeric(yearofrelease),
                       Tomato_UserMeter= as.numeric(Tomato_UserMeter),Tomato_Rating= as.numeric(Tomato_Rating),
                       Tomato_Meter= as.numeric(Tomato_Meter))
 
-# conversion of genre in factors
-
-unique(moviesDF$Genre)
-# there are 250 uniue combinations
-# (or)
-# there are 21 different genre's 
-# 1. Comedy, 2. Adventure, 3. Family, 4. Fantasy 5. Drama, 6. Action, 7. Thriller, 8. Romance,
-# 9. Sci-Fi, 10. Mystery, 11. Horror, 12. Animation, 13. Biography, 14. Crime, 15. Sport, 
-# 16. History, 17. War, 18. Music/Musical, 19. Documentary, 20. Short, 21. Adult, 22. Western
-
-# we can also subset movies based on movie rating and present that in the analysis
 
 unique(moviesDF$Rated)
 # we get 9 different rating types
@@ -211,8 +197,6 @@ unique(moviesDF$Rated)
 # UNRATED = "Scenes have been added in the film that were not present in the rated version"
 # NA = " no rating available" -- for such film we have to check online and add or we add check the
 # the genre and add the same rating of other movies in the same genre.
->>>>>>> origin/master
-
 
 
 
@@ -225,8 +209,6 @@ write.csv(price.data, file = "TcktPrice.csv")
 write.csv(boxoffice_earning, file = "TotalBoxOffice.csv")
 write.csv(tot.screen.data, file = "TotalScreenCount.csv")
 
-#
-load('LinearModelsProj1.RData')
 #Split the genre by comma
 genre <-strsplit( moviesDF$Genre,',')
 maxLen <- max(sapply(genre, length))
@@ -352,19 +334,20 @@ for(i in 1:dim(moviesDF)[1]){
   }
 }
 
-film <- cbind(moviesDF,genre1,genre2,genre3, Action,Adult,Adventure,Animation,Biography,Comedy,Crime, Documentary,Drama,Family,Fantasy,History,Horror,Music,Musical, Mystery,Romance,SciFi, Short,Sport,Thriller,War,Western )
+film <- cbind(moviesDF,as.factor(Action),as.factor(Adult),as.factor(Adventure),as.factor(Animation),as.factor(Biography),as.factor(Comedy),
+              as.factor(Crime), as.factor(Documentary),as.factor(Drama),as.factor(Family),as.factor(Fantasy),as.factor(History),as.factor(Horror),
+              as.factor(Music),as.factor(Musical), as.factor(Mystery),as.factor(Romance),as.factor(SciFi), as.factor(Short),as.factor(Sport),as.factor(Thriller),
+              as.factor(War),as.factor(Western) )
 
+my_names<-c("Name","gross_earning","theatre_count","year","IMDB_Rating","Genre","Tomato_Meter","Tomato_Rating","Tomato_User_Meter",
+            "Tomato_User_Rating","MPAA_Rating","Action","Adult","Adventure","Animation","Biography","Comedy","Crime",
+            "Documentary","Drama","Family","Fantasy","History","Horror","Music","Musical","Mystery","Romance","SciFi","Short","Sport","Thriller","War","Western")
 
-# cleaning the film dataset
-drop1 <- c("genre1", "genre2", "genre3", "Tomato_UserMeter", "Tomato_UserRating", "Genre", "yearofrelease")
-film1<- film[ , !( names(film) %in% drop1)]
+names(film) <- my_names
+names(film)
 
-# finding the NA rows in the rotten tomato column
-film2 <- film1[which(is.na(film1$Tomato_Meter), arr.ind = TRUE), ]
-
-# converting multiple column in factors
-nam <- names(film1[,7:30])
-film3 <- as.data.frame((apply(film1[, (names(film1) %in% nam)], 2,as.factor)))
-film1 <- cbind(film1[, 1:6], film3)
-
-model1 <- lm(gross_earning~., data = film1)
+lm1 <- lm(gross_earning~ theatre_count+IMDB_Rating+Tomato_Meter+Tomato_Rating+Tomato_User_Meter
+          +Tomato_User_Rating+MPAA_Rating+Action+Adventure+Animation+Biography+Comedy
+          +Crime+Documentary+Drama+Family+Fantasy+History+Horror+Music+Musical+
+            Mystery+ Romance+ SciFi+ Short+ Sport+ Thriller+War+Western, data= film)
+summary(lm1)
