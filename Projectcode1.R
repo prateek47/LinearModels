@@ -5,6 +5,8 @@ library(rvest)
 library(plyr)
 library(stringr)
 library(RJSONIO)
+library(MASS)
+library(car)
 
 # creating a corpus
 if (!file.exists("MovieData")) {
@@ -120,9 +122,6 @@ for(i in 1:nrow(moviesDF)){
 drops <- c("new_name", "X", "BoxOffice")
 moviesDF <- moviesDF[ ,!(names(moviesDF) %in% drops)]
 
-# get out of the Moviedata folder and save the dataset
-setwd("C:/UVa/Stat_6021_Linear Models/workspace")
-
 #----------------------
 # scraping the other movie data required
 # scraping ticket prices
@@ -185,9 +184,11 @@ moviesDF <- transform(moviesDF, yearofrelease= as.numeric(yearofrelease),
                       Tomato_Meter= as.numeric(Tomato_Meter))
 
 
-unique(moviesDF$Rated)
+unique(film$MPAA_Rating)
 # we get 9 different rating types
 # "PG"      "PG-13"   "R"       "G"       NA        "X"       "TV-MA"   "UNRATED" "TV-PG"
+
+film.PG <- film[film$MPAA_Rating == "R",]
 
 # PG = "Parental guidance suggested"
 # PG-13 = "Parents strongly cautioned"
@@ -199,15 +200,7 @@ unique(moviesDF$Rated)
 # the genre and add the same rating of other movies in the same genre.
 
 
-
-# save the R session as image so that we can reuse it again.
-save.image("LinearModelsProj1.RData")
-
-# saving the dataset in a csv format
-write.csv(moviesDF, file = "MovieData.csv")
-write.csv(price.data, file = "TcktPrice.csv")
-write.csv(boxoffice_earning, file = "TotalBoxOffice.csv")
-write.csv(tot.screen.data, file = "TotalScreenCount.csv")
+# ---------------------------- Conversion of Genre to factors in Regression------------------
 
 #Split the genre by comma
 genre <-strsplit( moviesDF$Genre,',')
@@ -226,6 +219,7 @@ for(i in 1:dim(moviesDF)[1]){
     genre3[i] <- genre[[i]][3]
   }
 }
+
 #get rid of white space
 library(stringr)
 genre1 <- str_trim(genre1)
@@ -262,6 +256,7 @@ Thriller <- rep(0,dim(moviesDF)[1])
 War <- rep(0,dim(moviesDF)[1])
 Western <- rep(0,dim(moviesDF)[1])
 
+# splitting the genre into factors
 for(i in 1:dim(moviesDF)[1]){
   if(any(genre1[i]=='Action',genre2[i]=='Action',genre3[i]=='Action',na.rm =T)){
     Action[i] <- 1
@@ -334,6 +329,8 @@ for(i in 1:dim(moviesDF)[1]){
   }
 }
 
+#-------------------------------------------------------------------------------------------
+# creating a new dataframe
 film <- cbind(moviesDF,as.factor(Action),as.factor(Adult),as.factor(Adventure),as.factor(Animation),as.factor(Biography),as.factor(Comedy),
               as.factor(Crime), as.factor(Documentary),as.factor(Drama),as.factor(Family),as.factor(Fantasy),as.factor(History),as.factor(Horror),
               as.factor(Music),as.factor(Musical), as.factor(Mystery),as.factor(Romance),as.factor(SciFi), as.factor(Short),as.factor(Sport),as.factor(Thriller),
@@ -342,29 +339,128 @@ film <- cbind(moviesDF,as.factor(Action),as.factor(Adult),as.factor(Adventure),a
 my_names<-c("Name","gross_earning","theatre_count","year","IMDB_Rating","Genre","Tomato_Meter","Tomato_Rating","Tomato_User_Meter",
             "Tomato_User_Rating","MPAA_Rating","Action","Adult","Adventure","Animation","Biography","Comedy","Crime",
             "Documentary","Drama","Family","Fantasy","History","Horror","Music","Musical","Mystery","Romance","SciFi","Short","Sport","Thriller","War","Western")
-
 names(film) <- my_names
 names(film)
 
-<<<<<<< HEAD
+# ----------------------------------------Model Creation------------------------------------
+# Initial full model
 lm1 <- lm(gross_earning~ theatre_count+IMDB_Rating+Tomato_Meter+Tomato_Rating+Tomato_User_Meter
           +Tomato_User_Rating+MPAA_Rating+Action+Adventure+Animation+Biography+Comedy
           +Crime+Documentary+Drama+Family+Fantasy+History+Horror+Music+Musical+
             Mystery+ Romance+ SciFi+ Short+ Sport+ Thriller+War+Western, data= film)
 summary(lm1)
-=======
+
+# adjusting the inflation value
+price.data$inflation <- price.data$price/price.data$price[15]
 price.data$price <- as.numeric(gsub("[$]","",price.data$price))
+
+# adding to the film Database
 film <- merge(price.data,film,by='year')
-film$gross_earning_after <- film$gross_earning/film$price
+# calculating the number of tickets sold
+film$num_of_tickt_sold <- film$gross_earning/film$price
+# calculating the gross earning for each movie after Inflation adjustment
+film$gross_earning_after <- film$gross_earning/(film$inflation)
 
-lm1 <- lm(gross_earning_after~theatre_count+IMDB_Rating+Tomato_Meter+Tomato_Rating+Tomato_User_Meter+Tomato_User_Rating+MPAA_Rating+Action+Adventure+Animation+Biography+Comedy+Crime+Documentary+Drama+Family+Fantasy+History+Horror+Music+Musical+Mystery+Romance+SciFi+Short+Sport+Thriller+War+Western,data=film)
+# creating a sample
+s <- sample(1:nrow(film), 800)
+film.train <- film[s, ]
+film.test <- film[-s, ]
+
+# full model after inflation adjustment
+lm2 <- lm(gross_earning_after~theatre_count+IMDB_Rating+Tomato_Meter+Tomato_Rating+
+            Tomato_User_Meter+Tomato_User_Rating+Action+Adventure+Animation+Biography+
+            Comedy+Crime+Documentary+Drama+Family+Fantasy+History+Horror+Music+Musical+
+            Mystery+Romance+SciFi+Short+Sport+Thriller+War+Western,data=film.train)
+summary(lm2)
+pred <- predict(lm2, newdata = film.test)
+mse <- mean((film.test$gross_earning_after-pred)^2, na.rm = TRUE)
+
+# 2nd model
+lm3 <- lm(gross_earning_after~theatre_count+Tomato_Meter+Tomato_Rating+Tomato_User_Meter+Tomato_User_Rating+
+            Animation+Adventure+Drama+Fantasy+Music+Mystery+Sport+Western, data = film.train)
+summary(lm3)
+pred1 <- predict(lm3, newdata = film.test)
+mse1 <- mean((film.test$gross_earning_after-pred1)^2, na.rm = TRUE)
+
+# stepise selection
+stepAIC(lm2, direction = "both")
+# model after stepwise selection
+lm4 <- lm(formula = gross_earning_after ~ theatre_count + Tomato_Meter + 
+            Tomato_Rating + Tomato_User_Meter + Tomato_User_Rating + 
+            Adventure + Drama + Family + Fantasy + Music + Short + Sport + 
+            Thriller, data = film.train)
+summary(lm4)
+pred2 <- predict(lm4, newdata = film.test)
+mse2 <- mean((film.test$gross_earning_after-pred2)^2, na.rm = TRUE)
+
+# trying the normality plots
+r_student1 <- rstudent(model = lm4)
+qqnorm(r_student1, xlab = "external standardized residuals",
+       ylab = "Probability", main = "Normal Probablity plot")
+qqline(r_student1)
+
+# calculating the box cox
+bc01 <- boxcox(lm4,plotit=T, interp=T)
+bc01   # Lists log-likelihoods and corresponding lambdas.
+
+maxlambda01 <- bc01$x[bc01$y==max(bc01$y)]
+maxlambda01 #[1] -0.26
+
+# checking multicollinearity in the model
+vif(lm4)
+# therefore, removing the Tomato_Rating and Tomato_User_Rating
+# models after transformation, log transformation
+lm5 <- lm(formula = log(gross_earning_after) ~ theatre_count + Tomato_Meter + 
+            Tomato_User_Meter + Adventure + Drama + Family + Fantasy + Music + Short + Sport + 
+            Thriller, data = film.train)
+# normality plots
+r_student2 <- rstudent(model = lm5)
+qqnorm(r_student2, xlab = "extelm5l standardized residuals",
+       ylab = "Probability", main = "Normal Probablity plot")
+qqline(r_student1)
+
+# the model based on box-cox value
+lm6 <- lm(formula = ((gross_earning_after)^(-0.26))~ theatre_count + Tomato_Meter + 
+            Tomato_User_Meter + Adventure + Drama + Family + Fantasy + Music + Short + Sport + 
+            Thriller, data = film.train)
+# trying the normality plots
+r_student3 <- rstudent(model = lm6)
+qqnorm(r_student3, xlab = "external standardized residuals",
+       ylab = "Probability", main = "Normal Probablity plot")
+qqline(r_student1)
 
 
-summary(lm1)
+# Therefore, model 'lm5' is the best model, after transformation and feature selection
+#---------------------------------------------------------------------------------------------
 
 
 
 
+# save the R session as image so that we can reuse it again.
+save.image("LinearModelsProj1.RData")
 
 
->>>>>>> origin/master
+#R rated movies
+R <- film[which(film$MPAA_Rating == 'R'),]
+
+r.model.full <- lm(gross_earning_after~theatre_count+IMDB_Rating+Tomato_Meter+Tomato_Rating+Tomato_User_Meter+Tomato_User_Rating+Action+Adventure+Animation+Biography+Comedy+Crime+Documentary+Drama+Fantasy+History+Horror+Music+Musical+Mystery+Romance+SciFi+Sport+Thriller+War+Western,data=R)
+summary(r.model.full)
+
+step <- stepAIC(r.model.full,direction="both")
+step$anova
+
+r.model <- lm(gross_earning_after ~ theatre_count + Tomato_Meter + Tomato_User_Meter  + Action+ Crime + Horror + Mystery + Sport + Thriller,data=R)
+summary(r.model)
+
+qqnorm(r.model$res)
+qqline(r.model$res)
+
+r.model.log <- lm(log(gross_earning_after) ~ theatre_count + Tomato_Meter + Tomato_User_Meter  + Action+ Crime + Horror + Mystery + Sport + Thriller,data=R)
+summary(r.model.log)
+
+#outlying movies
+box <- boxplot(film$gross_earning_after)
+film.order <- film[order(film$gross_earning_after,decreasing=T),]
+top.ten <- film.order[1:100,]
+model.ten <- lm(gross_earning_after~theatre_count+IMDB_Rating+Tomato_Meter+Tomato_User_Meter+Action+Adventure+Animation+Biography,data=top.ten)
+summary(model.ten)
