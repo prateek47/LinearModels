@@ -174,7 +174,6 @@ tot.screen.data <- tot.screen.data[2:16, ]
 #-------------------------------------
 
 #Do some data cleaning and tranformation of data types
-
 moviesDF$gross_earning <- as.integer(gsub("[$,]","",moviesDF$gross_earning))
 moviesDF$theatre_count <- as.integer(gsub(",","",moviesDF$theatre_count))
 moviesDF[moviesDF=="N/A"] <- NA
@@ -182,23 +181,6 @@ moviesDF <- transform(moviesDF, yearofrelease= as.numeric(yearofrelease),
                       IMDB_Rating= as.numeric(IMDB_Rating), Tomato_UserRating= as.numeric(Tomato_UserRating),
                       Tomato_UserMeter= as.numeric(Tomato_UserMeter),Tomato_Rating= as.numeric(Tomato_Rating),
                       Tomato_Meter= as.numeric(Tomato_Meter))
-
-
-unique(film$MPAA_Rating)
-# we get 9 different rating types
-# "PG"      "PG-13"   "R"       "G"       NA        "X"       "TV-MA"   "UNRATED" "TV-PG"
-
-film.PG <- film[film$MPAA_Rating == "R",]
-
-# PG = "Parental guidance suggested"
-# PG-13 = "Parents strongly cautioned"
-# R/TV-PG = "Restricted"
-# X/TV-MA/NC-17 ="No one 17 and under admitted"
-# G = "General Auidence"
-# UNRATED = "Scenes have been added in the film that were not present in the rated version"
-# NA = " no rating available" -- for such film we have to check online and add or we add check the
-# the genre and add the same rating of other movies in the same genre.
-
 
 # ---------------------------- Conversion of Genre to factors in Regression------------------
 
@@ -221,7 +203,6 @@ for(i in 1:dim(moviesDF)[1]){
 }
 
 #get rid of white space
-library(stringr)
 genre1 <- str_trim(genre1)
 genre2 <- str_trim(genre2)
 genre3 <- str_trim(genre3)
@@ -372,10 +353,12 @@ lm2 <- lm(gross_earning_after~theatre_count+IMDB_Rating+Tomato_Meter+Tomato_Rati
             Comedy+Crime+Documentary+Drama+Family+Fantasy+History+Horror+Music+Musical+
             Mystery+Romance+SciFi+Short+Sport+Thriller+War+Western,data=film.train)
 summary(lm2)
+# the full model shows an R-square value of .51
+
 pred <- predict(lm2, newdata = film.test)
 mse <- mean((film.test$gross_earning_after-pred)^2, na.rm = TRUE)
 
-# 2nd model
+# 2nd model based upon the p-values of the variables
 lm3 <- lm(gross_earning_after~theatre_count+Tomato_Meter+Tomato_Rating+Tomato_User_Meter+Tomato_User_Rating+
             Animation+Adventure+Drama+Fantasy+Music+Mystery+Sport+Western, data = film.train)
 summary(lm3)
@@ -383,14 +366,13 @@ pred1 <- predict(lm3, newdata = film.test)
 mse1 <- mean((film.test$gross_earning_after-pred1)^2, na.rm = TRUE)
 
 # stepise selection
-library(MASS)
 stepAIC(lm2, direction = "both")
 # model after stepwise selection
 lm4 <- lm(formula = gross_earning_after ~ theatre_count + Tomato_Meter + 
             Tomato_Rating + Tomato_User_Meter + Tomato_User_Rating + 
-            Adventure + Drama + Family + Fantasy + Music + Short + Sport + 
-            Thriller, data = film.train)
-summary(lm4)
+            Adventure + Animation + Drama + Family + Fantasy + Horror + 
+            Music + Short + Sport + War + Western, data = film.train)
+summary(lm4) # R-square == 0.506
 pred2 <- predict(lm4, newdata = film.test)
 mse2 <- mean((film.test$gross_earning_after-pred2)^2, na.rm = TRUE)
 
@@ -410,29 +392,85 @@ maxlambda01 #[1] -0.26
 # checking multicollinearity in the model
 vif(lm4)
 # therefore, removing the Tomato_Rating and Tomato_User_Rating
+
 # models after transformation, log transformation
-lm5 <- lm(formula = log(gross_earning_after) ~ theatre_count + Tomato_Meter + 
-            Tomato_User_Meter + Adventure + Drama + Family + Fantasy + Music + Short + Sport + 
-            Thriller, data = film.train)
+lm5 <- lm(formula = gross_earning_after ~ theatre_count + Tomato_Meter + Tomato_User_Meter +
+            Adventure + Animation + Drama + Family + Fantasy + Horror + Music + Short +
+            Sport + War + Western, data = film.train)
+summary(lm5) # R-square == 0.4958
+pred3 <- predict(lm5, newdata = film.test)
+mse3 <- mean((film.test$gross_earning_after-pred3)^2, na.rm = TRUE)
+
 # normality plots
 r_student2 <- rstudent(model = lm5)
 qqnorm(r_student2, xlab = "extelm5l standardized residuals",
        ylab = "Probability", main = "Normal Probablity plot")
-qqline(r_student1)
+qqline(r_student2)
+
+# checking for multicollinearity
+vif(lm5)
+
+# calculating the box cox
+bc02 <- boxcox(lm5,plotit=T, interp=T)
+bc02   # Lists log-likelihoods and corresponding lambdas.
+bc02$out
+maxlambda02 <- bc02$x[bc02$y==max(bc02$y)]
+maxlambda02 #[1] -0.26
 
 # the model based on box-cox value
-lm6 <- lm(formula = ((gross_earning_after)^(-0.26))~ theatre_count + Tomato_Meter + 
-            Tomato_User_Meter + Adventure + Drama + Family + Fantasy + Music + Short + Sport + 
-            Thriller, data = film.train)
+lm6 <- lm(formula = ((gross_earning_after)^(-0.26)) ~ theatre_count + Tomato_Meter + Tomato_User_Meter +
+            Adventure + Animation + Drama + Family + Fantasy + Horror + Music + Short +
+            Sport + War + Western, data = film.train)
+summary(lm6) # R-square == 0.54
+pred4 <- predict(lm6, newdata = film.test)
+mse4 <- mean((film.test$gross_earning_after-(pred4)^(1/(-0.26)))^2, na.rm = TRUE)
+
 # trying the normality plots
 r_student3 <- rstudent(model = lm6)
 qqnorm(r_student3, xlab = "external standardized residuals",
        ylab = "Probability", main = "Normal Probablity plot")
-qqline(r_student1)
+qqline(r_student3)
 
+# The 'log' Transformation
+lm7 <- lm(formula = log(gross_earning_after) ~ theatre_count + Tomato_Meter + Tomato_User_Meter +
+            Adventure + Animation + Drama + Family + Fantasy + Horror + Music + Short +
+            Sport + War + Western, data = film.train)
+summary(lm7) # R-square == 0.54
+pred5 <- predict(lm7, newdata = film.test)
+mse5 <- mean((film.test$gross_earning_after-exp(pred5))^2, na.rm = TRUE)
 
-# Therefore, model 'lm5' is the best model, after transformation and feature selection
-#---------------------------------------------------------------------------------------------
+# trying the normality plots
+r_student4 <- rstudent(model = lm7)
+qqnorm(r_student4, xlab = "external standardized residuals",
+       ylab = "Probability", main = "Normal Probablity plot")
+qqline(r_student4)
+
+# checking the contribution of each variable using the anova test
+
+anova.lm7 <- aov(formula = log(gross_earning_after) ~ theatre_count + Tomato_Meter + Tomato_User_Meter +
+                   Adventure + Animation + Drama + Family + Fantasy + Horror + Music + Short +
+                   Sport + War + Western, data = film.train)
+summary(anova.lm7)
+
+# observing the F and P values we can remove some variables, as these are insignificant 
+lm8 <- lm(formula = log(gross_earning_after) ~ theatre_count + Tomato_Meter + Tomato_User_Meter +
+            Drama + Fantasy + Horror + Music + Short + Sport, data = film.train)
+summary(lm8) # R-square == 0.54
+pred6 <- predict(lm7, newdata = film.test)
+mse6 <- mean((film.test$gross_earning_after-exp(pred6))^2, na.rm = TRUE)
+
+# trying the normality plots
+r_student4 <- rstudent(model = lm8)
+qqnorm(r_student4, xlab = "external standardized residuals",
+       ylab = "Probability", main = "Normal Probablity plot")
+qqline(r_student4)
+
+# Therefore, lm8 is the correct model.
+#-----------------------------------------------------------------------------------------------------------------
+
+# save the R session as image so that we can reuse it again.
+save.image("LinearModelsProj1.RData")
+
 
 
 
