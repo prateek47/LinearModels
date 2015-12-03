@@ -351,8 +351,8 @@ lm1 <- lm(gross_earning~ theatre_count+IMDB_Rating+Tomato_Meter+Tomato_Rating+To
 summary(lm1)
 
 # adjusting the inflation value
-price.data$inflation <- price.data$price/price.data$price[15]
 price.data$price <- as.numeric(gsub("[$]","",price.data$price))
+price.data$inflation <- price.data$price/price.data$price[15]
 
 # adding to the film Database
 film <- merge(price.data,film,by='year')
@@ -383,6 +383,7 @@ pred1 <- predict(lm3, newdata = film.test)
 mse1 <- mean((film.test$gross_earning_after-pred1)^2, na.rm = TRUE)
 
 # stepise selection
+library(MASS)
 stepAIC(lm2, direction = "both")
 # model after stepwise selection
 lm4 <- lm(formula = gross_earning_after ~ theatre_count + Tomato_Meter + 
@@ -438,7 +439,7 @@ qqline(r_student1)
 
 # save the R session as image so that we can reuse it again.
 save.image("LinearModelsProj1.RData")
-
+load("LinearModelsProj1.RData")
 
 #R rated movies
 R <- film[which(film$MPAA_Rating == 'R'),]
@@ -458,9 +459,15 @@ qqline(r.model$res)
 r.model.log <- lm(log(gross_earning_after) ~ theatre_count + Tomato_Meter + Tomato_User_Meter  + Action+ Crime + Horror + Mystery + Sport + Thriller,data=R)
 summary(r.model.log)
 
-#outlying movies
+#models for outlying movies
 box <- boxplot(film$gross_earning_after)
-film.order <- film[order(film$gross_earning_after,decreasing=T),]
-top.ten <- film.order[1:100,]
-model.ten <- lm(gross_earning_after~theatre_count+IMDB_Rating+Tomato_Meter+Tomato_User_Meter+Action+Adventure+Animation+Biography,data=top.ten)
-summary(model.ten)
+#Subset the outlying movies based on boxplot and in total there are 122
+film.outlier <- film[which(film$gross_earning_after %in% box$out),]
+#Descending Order
+film.order <- film.outlier[order(film.outlier$gross_earning_after,decreasing=T),]
+#Model
+model.outlier <- lm(gross_earning_after~theatre_count+IMDB_Rating+Tomato_Meter+Tomato_User_Meter+Action+Adventure+Animation+Biography+Comedy+Crime+Drama+Fantasy+Mystery+Romance+SciFi+Sport+Thriller,data=film.order)
+summary(model.outlier)
+
+model.outlier.reduce <- lm(gross_earning_after~theatre_count+IMDB_Rating+Tomato_Meter+Tomato_User_Meter+Drama+Fantasy,data=film.order)
+summary(model.outlier.reduce)
